@@ -1,0 +1,266 @@
+import requests
+import traceback
+import json
+import logging
+from SpiderManager import settings
+
+logger= logging.getLogger(__name__)
+class scrapydAPI(object):
+    """
+    scrapyd_version=1.2
+    """
+    host = settings.SCRAPYD_HOST
+    port = settings.SCRAPYD_PORT
+
+    def daemonstatus(self):
+        """
+        从scrapd中获取服务运行的状态
+        :method GET
+        :return { "status": "ok", "running": "0", "pending": "0", "finished": "0", "node_name": "node-name" }
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        try:
+            api_response = requests.get(api_url, timeout=3).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def addversion(self,project_name, project_version, egg_path):
+        """
+        添加一个版本至项目中,如果项目不存在则创建该项目
+        :method POST
+        :return {"status": "ok", "spiders": 3}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        data = {
+            'project': project_name,
+            'version': project_version
+        }
+        files = {'egg': open(egg_path,  'rb')}
+        try:
+            api_response = requests.post(api_url, data=data, files=files, timeout=10).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def schedule(self, project_name, spider_name, **params):
+        """
+        启动一个爬虫，并返回其id
+        :method POST
+        :project_name 项目名称
+        :spider_name 爬虫名称
+        :**params setting 爬虫运行时的配置
+        :**params jobid 用于标识作业的作业id，覆盖缺省生成UUID
+        :**params _version 要使用的版本号
+        :**params meta 任何你想传递的参数
+        :return {"status": "ok", "jobid": "6487ec79947edab326d6db28a2d86511e8247444"}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        data = {
+            'project': project_name,
+            'spider': spider_name,
+        }
+        try:
+            api_response = requests.post(api_url, data=data, timeout=5).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def cancel(self, project_name, jobid):
+        """
+        取消一个爬虫运行,如果尚未完成,它将被移除,如果这项工作正在进行，它将被终止.
+        :method POST
+        :project_name 项目名称
+        :jobid 爬虫id
+        :return {"status": "ok", "prevstate": "running"}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        data = {
+            'project': project_name,
+            'job': jobid,
+        }
+        try:
+            api_response = requests.post(api_url, data=data, timeout=5).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def listprojects(self):
+        """
+        查看当前爬虫项目列表
+        :method GET
+        :return {"status": "ok", "projects": ["myproject", "otherproject"]}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        try:
+            api_response = requests.get(api_url, timeout=5).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def listversions(self, project_name):
+        """
+        查看当前爬虫项目版本列表
+        :method GET
+        :return {"status": "ok", "projects": ["myproject", "otherproject"]}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        data = {
+            'project': project_name
+        }
+        try:
+            api_response = requests.get(api_url, params=data, timeout=5).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def listspiders(self, project_name):
+        """
+        查看当前爬虫项目最新版本爬虫的版本
+        :method GET
+        :param project_name 爬虫项目名称
+        :param _version 可选,爬虫版本
+        :return {"status": "ok", "spiders": ["spider1", "spider2", "spider3"]}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        data = {
+            'project': project_name
+        }
+        try:
+            api_response = requests.get(api_url, params=data, timeout=5).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def listjobs(self, project_name):
+        """
+        查看当前爬虫项目的状态与爬虫列表
+        :method GET
+        :param project_name 爬虫项目名称
+        :return {"status": "ok",
+                 "pending": [{"id": "78391cc0fcaf11e1b0090800272a6d06", "spider": "spider1"}],
+                 "running": [{"id": "422e608f9f28cef127b3d5ef93fe9399", "spider": "spider2", "start_time": "2012-09-12 10:14:03.594664"}],
+                 "finished": [{"id": "2f16646cfcaf11e1b0090800272a6d06", "spider": "spider3", "start_time": "2012-09-12 10:14:03.594664", "end_time": "2012-09-12 10:24:03.594664"}]}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        data = {
+            'project': project_name
+        }
+        try:
+            api_response = requests.get(api_url, params=data, timeout=5).text
+            print(api_url)
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def delversion(self, project_name, version):
+        """
+        查看当前爬虫项目的状态与爬虫列表
+        :method POST
+        :param project_name 爬虫项目名称
+        :param version 爬虫版本
+        :return {"status": "ok"}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        data = {
+            'project': project_name,
+            'version': version,
+        }
+        try:
+            api_response = requests.post(api_url, data=data, timeout=5).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def delproject(self, project_name):
+        """
+        删除项目
+        :method POST
+        :param project_name 爬虫项目名称
+        :return {"status": "ok"}
+        """
+        # 获取当前函数名称作为api接口的名称
+        api_name = self.get_func_name()
+        api_url = 'http://{host}:{port}/{api_name}.json'.format(host=self.host, port=self.port, api_name=api_name)
+        data = {
+            'project': project_name,
+        }
+        try:
+            api_response = requests.post(api_url, data=data, timeout=5).text
+        except requests.exceptions.ConnectTimeout as e:
+            reason = json.dumps({'erro': 'ConnectTimeout'})
+            return reason
+        except requests.exceptions.ConnectionError as e:
+            reason = json.dumps({'erro': 'ConnectionError'})
+            return reason
+        else:
+            return api_response
+
+    def get_func_name(self):
+        # 获取当前func的名称
+        return traceback.extract_stack()[-2][2]
+
+
